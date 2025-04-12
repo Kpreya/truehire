@@ -1,4 +1,4 @@
-##LINKS:
+## LINKS:
 Deployed Link:https://truehire.onrender.com/
 Video Link:https://youtu.be/2ql5D2ChnHo
 
@@ -25,8 +25,8 @@ TrueHire provides:
 
 ### Backend
 - **Framework**: FastAPI
-- **Database**: SQLite/PostgreSQL
-- **AI Integration**: OpenAI GPT-3.5/4 API
+- **Database**: SuperBase
+- **AI Integration**: DeepSeek and Elevene Labs API key
 - **Authentication**: JWT-based auth
 
 ### Frontend
@@ -37,7 +37,7 @@ TrueHire provides:
 ## 🚀 Features & Implementation
 
 ### Phase 1: Authentication & Interest Collection
-- Email/password authentication
+- Email/password and Linkedin authentication
 - Role selection (Management/Developer)
 - Experience level assessment
 - Profile initialization
@@ -84,7 +84,7 @@ TrueHire provides:
 
 1. **Clone Repository**
 ```bash
-git clone https://github.com/yourusername/truehire.git
+git clone https://github.com/techiepookie/truehire.git
 cd truehire
 ```
 
@@ -106,12 +106,8 @@ cp .env.example .env
 # Edit .env with your configurations
 ```
 
-5. **Database Setup**
-```bash
-python scripts/init_db.py
-```
 
-6. **Run Application**
+. **Run Application**
 ```bash
 uvicorn main:app --reload
 ```
