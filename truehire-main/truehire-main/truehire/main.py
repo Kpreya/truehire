@@ -515,4 +515,10 @@ logging.basicConfig(level=logging.INFO)
 # Run the app
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        "truehire.main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 8000)),
+        reload=os.getenv("ENV") == "development",
+        workers=int(os.getenv("WEB_CONCURRENCY", 1))
+    )
