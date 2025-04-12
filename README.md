@@ -1,3 +1,7 @@
+##LINKS:
+Deployed Link:https://truehire.onrender.com/
+Video Link:https://youtu.be/2ql5D2ChnHo
+
 
 TrueHire revolutionizes the traditional hiring process by focusing on demonstrated skills and abilities rather than resumes. Our platform uses AI-driven assessments, blind matching, and real-world challenges to create a fair and efficient hiring ecosystem.
 
@@ -180,7 +184,9 @@ This project is licensed under the MIT License - see LICENSE file for details.
 ## 📞 Support
 For support, email support: 
 nikhilkumar1241@outlook.com 
+
 krish6.ch@gmail.com
+
 kshitizravijangra@gmail.com
 --
 
