@@ -1,0 +1,972 @@
+from fastapi import FastAPI, HTTPException, Request, File, UploadFile, Form
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, StreamingResponse, JSONResponse, TemplateResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from typing import List, Optional, Dict, Union, Any
+from datetime import datetime, timedelta
+import uuid
+import json
+import os
+import random
+import string
+import traceback
+import re
+import asyncio
+import aiofiles
+import logging
+import httpx
+# Comment out potentially problematic imports
+# import gtts
+# from gtts import gTTS
+# import speech_recognition as sr
+import io
+import tempfile
+import time
+import numpy as np
+import requests
+import shutil
+import aiohttp
+
+app = FastAPI()
+
+# Initialize templates
+STATIC_DIR = "static"
+templates = Jinja2Templates(directory=STATIC_DIR)
+
+# Create templates directory if it doesn't exist
+os.makedirs(STATIC_DIR, exist_ok=True)
+
+# Global state for interview tracking
+current_question_number = 0
+total_questions = 5  # Default number of questions per interview
+interview_answers = []  # Store all answers for final evaluation
+
+# Directory for temporary audio files and transcripts
+TEMP_DIR = "temp_audio"
+TRANSCRIPT_DIR = "transcripts"
+os.makedirs(TEMP_DIR, exist_ok=True)
+os.makedirs(TRANSCRIPT_DIR, exist_ok=True)
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+# Replace with your OpenRouter API key
+OPENROUTER_API_KEY = "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"
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+
+# ElevenLabs API key - you should use an environment variable for this in production
+ELEVENLABS_API_KEY = "sk_ac6cbfe4e6ead10b573b61dbe9c83f5d566b6f8ff02766e2"  # Replace with your actual key
+ELEVENLABS_API_URL = "https://api.elevenlabs.io/v1/text-to-speech"
+
+# Female HR voice options for ElevenLabs
+VOICE_OPTIONS = {
+    "interviewer": {
+        "voice_id": "EXAVITQu4vr4xnSDxMaL",  # Sarah - professional female voice
+        "model_id": "eleven_multilingual_v2",
+        "stability": 0.5,
+        "similarity_boost": 0.75,
+        "style": 0.0,
+        "speaking_rate": 0.9  # Slightly slower, more calm speaking rate
+    }
+}
+
+class InterviewRequest(BaseModel):
+    role: str
+    difficulty: Optional[str] = "medium"
+    duration: Optional[int] = 3  # minutes
+
+class QuestionResponse(BaseModel):
+    content: str
+    type: str = "question"
+    
+class VoiceSettings(BaseModel):
+    stability: float = 0.5
+    similarity_boost: float = 0.75
+    style: float = 0.0
+    speaking_rate: float = 1.0
+
+class AnswerSubmission(BaseModel):
+    role: str
+    question: str
+    answer: str
+
+class InterviewMetric(BaseModel):
+    score: float
+    description: str
+
+class InterviewPerformance(BaseModel):
+    pace: InterviewMetric
+    tone: InterviewMetric
+    clarity: InterviewMetric
+    empathy: InterviewMetric
+    relevancy: InterviewMetric
+    sentiment: InterviewMetric
+    confidence: InterviewMetric
+    completeness: InterviewMetric
+    average_score: float
+
+class WorkStyleMetric(BaseModel):
+    overall: float
+    description: str
+    work_approach: Dict[str, float]
+    team_dynamics: Dict[str, float]
+    work_ethic: Dict[str, float]
+
+class ProfessionalCompetenciesMetric(BaseModel):
+    overall: float
+    description: str
+    leadership_management: float
+    problem_solving_decision_making: float
+    communication_skills: float
+    cognitive_adaptability: float
+
+class PersonalityCompatibilitiesMetric(BaseModel):
+    overall: float
+    description: str
+    openness_conventionality: Dict[str, float]
+    perfectionism_flexibility: Dict[str, float]
+    extraversion_introversion: Dict[str, float]
+    agreeableness_assertiveness: Dict[str, float]
+
+class CareerGrowthMetric(BaseModel):
+    overall: float
+    description: str
+    ambition_drive: float
+    risk_attitude: Dict[str, float]
+    career_focus: Dict[str, float]
+    learning_orientation: float
+
+class StressManagementMetric(BaseModel):
+    overall: float
+    description: str
+    stress_response: Dict[str, float]
+    work_life_balance: float
+    pressure_handling: float
+    recovery_ability: Dict[str, float]
+
+class CulturalFitMetric(BaseModel):
+    overall: float
+    description: str
+    organizational_culture: float
+    cultural_sensitivity: float
+    social_responsibility: float
+    adaptability_structure: Dict[str, float]
+
+class JobCompatibility(BaseModel):
+    professional_competencies: ProfessionalCompetenciesMetric
+    work_style_ethics: WorkStyleMetric
+    personality_compatibility: PersonalityCompatibilitiesMetric
+    career_growth: CareerGrowthMetric
+    stress_management: StressManagementMetric
+    cultural_fit: CulturalFitMetric
+    average_score: float
+
+class InterviewResult(BaseModel):
+    interview_performance: InterviewPerformance
+    job_compatibility: JobCompatibility
+
+class InterviewTranscript(BaseModel):
+    session_id: str
+    candidate_name: Optional[str] = "Anonymous Candidate"
+    role: str
+    experience: Optional[str] = "Not specified"
+    timestamp: str
+    questions_answers: List[dict]
+    evaluation: Optional[dict] = None
+
+# Behavioral and soft skills questions templates
+SOFT_SKILLS_TEMPLATES = {
+    "conflict_resolution": [
+        "Describe a situation where you had to resolve a conflict within your team. How did you handle it?",
+        "Tell me about a time when you had a disagreement with a colleague. How did you resolve it?",
+        "How do you typically handle conflicts in the workplace?"
+    ],
+    "leadership": [
+        "Describe a situation where you took the lead on a challenging project.",
+        "Tell me about a time when you had to motivate a team through a difficult situation.",
+        "How do you approach delegating tasks and responsibilities?"
+    ],
+    "communication": [
+        "Describe a situation where you had to explain a complex concept to someone with little background knowledge.",
+        "Tell me about a time when you had to deliver difficult feedback to a colleague or team member.",
+        "How do you ensure effective communication within a team with diverse backgrounds?"
+    ],
+    "problem_solving": [
+        "Tell me about a complex problem you faced at work and how you approached solving it.",
+        "Describe a situation where you had to think creatively to solve a problem.",
+        "How do you typically approach troubleshooting and problem-solving in your work?"
+    ],
+    "adaptability": [
+        "Describe a situation where you had to quickly adapt to changes in requirements or circumstances.",
+        "Tell me about a time when you had to learn a new skill or technology in a short amount of time.",
+        "How do you handle unexpected challenges or setbacks in your work?"
+    ],
+    "teamwork": [
+        "Describe your approach to collaborating with team members who have different working styles.",
+        "Tell me about a successful team project and your contribution to its success.",
+        "How do you handle situations where team members aren't pulling their weight?"
+    ],
+    "time_management": [
+        "How do you prioritize tasks when you have multiple deadlines approaching?",
+        "Describe a situation where you had to manage multiple projects simultaneously.",
+        "Tell me about a time when you had to work under tight time constraints."
+    ],
+    "stress_management": [
+        "How do you handle high-pressure situations or tight deadlines?",
+        "Describe a stressful situation you faced at work and how you managed it.",
+        "What techniques do you use to stay calm and focused under pressure?"
+    ]
+}
+
+# Role-specific technical question templates
+ROLE_TEMPLATES = {
+    "developer": [
+        "Tell me about your experience with {technology}.",
+        "How would you implement {feature} using {language}?",
+        "Describe a challenging technical problem you've solved.",
+        "How do you approach debugging a complex issue in a {technology} application?",
+        "Explain your understanding of {concept} in software development."
+    ],
+    "management": [
+        "How do you handle team conflicts?",
+        "Describe your approach to project planning and resource allocation.",
+        "Tell me about a time you had to make a difficult decision as a leader.",
+        "How do you measure team performance and productivity?",
+        "What strategies do you use to keep your team motivated?"
+    ],
+    "design": [
+        "Walk me through your design process.",
+        "How do you incorporate user feedback into your designs?",
+        "Tell me about a design challenge you faced and how you overcame it.",
+        "How do you balance aesthetics with functionality?",
+        "What design trends are you currently following and why?"
+    ]
+}
+
+# Technologies and concepts for developer questions
+TECHNOLOGIES = ["JavaScript", "Python", "React", "Node.js", "MongoDB", "SQL", "AWS", "Docker", "Kubernetes", "Git"]
+FEATURES = ["authentication system", "data visualization dashboard", "RESTful API", "real-time chat", "payment integration"]
+LANGUAGES = ["JavaScript", "Python", "Java", "C#", "TypeScript", "Go"]
+CONCEPTS = ["microservices", "serverless architecture", "CI/CD", "test-driven development", "design patterns"]
+
+def generate_question_for_role(role, include_soft_skills=True):
+    """Generate a relevant question based on the selected role with soft skills option"""
+    role = role.lower()
+    
+    # Randomly decide whether to ask a technical or soft skills question
+    if include_soft_skills and random.random() < 0.6:  # 60% chance for soft skills questions
+        # Select a random soft skills category
+        soft_skill_category = random.choice(list(SOFT_SKILLS_TEMPLATES.keys()))
+        return random.choice(SOFT_SKILLS_TEMPLATES[soft_skill_category])
+    
+    # Fall back to technical/role-specific question
+    if role not in ROLE_TEMPLATES:
+        role = "developer"  # Default to developer if role not found
+    
+    template = random.choice(ROLE_TEMPLATES[role])
+    
+    # Fill in placeholders for developer questions
+    if role == "developer":
+        template = template.replace("{technology}", random.choice(TECHNOLOGIES))
+        template = template.replace("{feature}", random.choice(FEATURES))
+        template = template.replace("{language}", random.choice(LANGUAGES))
+        template = template.replace("{concept}", random.choice(CONCEPTS))
+    
+    return template
+
+async def get_ai_response(messages):
+    """Get response from OpenRouter API"""
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost:8000"  # Update with your domain
+    }
+    
+    payload = {
+        "model": "deepseek/deepseek-r1:free",  # Try a different model
+        "messages": messages,
+        "temperature": 0.7,
+        "max_tokens": 10000
+    }
+    
+    async with httpx.AsyncClient(timeout=60.0) as client:  # Increased timeout
+        try:
+            response = await client.post(OPENROUTER_API_URL, json=payload, headers=headers)
+            if response.status_code == 200:
+                return response.json()["choices"][0]["message"]["content"]
+            else:
+                print(f"API Error: {response.status_code} - {response.text}")
+                # Fall back to a pre-generated response if API fails
+                return "I've reviewed your response and would like to explore further. Could you elaborate more on your approach and provide specific examples from your experience?"
+        except Exception as e:
+            print(f"Exception when calling OpenRouter API: {str(e)}")
+            # Fall back to a pre-generated response if API call fails
+            return "Thank you for your response. Let's explore a different aspect of your experience. Can you share a situation where you had to adapt to unexpected changes?"
+
+async def text_to_speech_elevenlabs(text, voice_config=None):
+    """Convert text to speech using ElevenLabs API for more natural voices"""
+    if not voice_config:
+        voice_config = VOICE_OPTIONS["interviewer"]
+    
+    voice_id = voice_config["voice_id"]
+    model_id = voice_config.get("model_id", "eleven_multilingual_v2")
+    
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": ELEVENLABS_API_KEY
+    }
+    
+    payload = {
+        "text": text,
+        "model_id": model_id,
+        "voice_settings": {
+            "stability": voice_config.get("stability", 0.5),
+            "similarity_boost": voice_config.get("similarity_boost", 0.75),
+            "style": voice_config.get("style", 0.0),
+            "use_speaker_boost": True
+        }
+    }
+    
+    # Add speaking rate if provided
+    if "speaking_rate" in voice_config:
+        payload["speaking_rate"] = voice_config["speaking_rate"]
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload, headers=headers)
+            
+            if response.status_code == 200:
+                # Save audio to a temporary file
+                audio_file_path = os.path.join(TEMP_DIR, f"response_{uuid.uuid4()}.mp3")
+                with open(audio_file_path, "wb") as f:
+                    f.write(response.content)
+                return audio_file_path
+            else:
+                print(f"ElevenLabs API Error: {response.status_code} - {response.text}")
+                # Fallback to gTTS if ElevenLabs fails
+                return await text_to_speech_gtts(text)
+    except Exception as e:
+        print(f"Error in text-to-speech conversion: {str(e)}")
+        # Fallback to gTTS if ElevenLabs fails
+        return await text_to_speech_gtts(text)
+
+async def text_to_speech_gtts(text):
+    """Fallback TTS method using gTTS"""
+    try:
+        # Create a unique file name
+        audio_file_path = os.path.join(TEMP_DIR, f"response_{uuid.uuid4()}.mp3")
+        
+        # Create gTTS object
+        tts = gTTS(text=text, lang='en', slow=False)
+        
+        # Save to file
+        tts.save(audio_file_path)
+        
+        return audio_file_path
+    except Exception as e:
+        print(f"Error in fallback text-to-speech conversion: {str(e)}")
+        return None
+
+# Root endpoint to serve index.html
+@app.get("/")
+async def read_root():
+    return FileResponse("static/index.html")
+
+# Role selection page
+@app.get("/role-selection")
+async def read_role_selection():
+    return FileResponse("static/role_selection.html")
+
+# Permissions page
+@app.get("/permissions")
+async def read_permissions():
+    return FileResponse("static/permissions.html")
+
+# Assessment page
+@app.get("/assessment")
+async def read_assessment():
+    return FileResponse("static/assessment-combined.html")
+
+# Interview page
+@app.get("/interview")
+async def interview_page(request: Request):
+    return FileResponse(os.path.join(STATIC_DIR, "interview.html"))
+
+# Serve static files
+app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# Session management (in-memory for now, can be moved to database later)
+sessions = {}
+
+# Role selection endpoint
+@app.post("/api/select-role")
+async def select_role(role_data: dict):
+    session_id = str(uuid.uuid4())
+    sessions[session_id] = {
+        "role": role_data["role"],
+        "experience": role_data["experience"],
+        "assessment_completed": False,
+        "assessment_score": 0,
+        "permissions": {
+            "camera": False,
+            "microphone": False,
+            "screen": False
+        }
+    }
+    return {"session_id": session_id}
+
+# Permissions endpoint
+@app.post("/api/permissions")
+async def update_permissions(permissions: dict):
+    session_id = permissions.get("session_id")
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    sessions[session_id]["permissions"].update({
+        "camera": permissions.get("camera", False),
+        "microphone": permissions.get("microphone", False),
+        "screen": permissions.get("screen", False)
+    })
+    
+    return {"status": "success"}
+
+# Get assessment questions based on role
+@app.get("/api/assessment/questions/{session_id}")
+async def get_assessment_questions(session_id: str):
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    role = sessions[session_id]["role"]
+    experience = sessions[session_id]["experience"]
+    
+    # Generate role and experience specific questions
+    questions = generate_assessment_questions(role, experience)
+    return {"questions": questions}
+
+# Get assessment questions based on role and experience
+@app.get("/assessment_questions")
+async def get_assessment_questions_api(role: str, experience: str):
+    """Get a set of assessment questions based on role and experience"""
+    try:
+        # Generate questions
+        questions = generate_assessment_questions(role, experience)
+        
+        # Return questions in a structured format
+        return {"questions": questions}
+    except Exception as e:
+        print(f"Error generating questions: {str(e)}")
+        traceback_info = traceback.format_exc()
+        print(f"Traceback: {traceback_info}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate questions: {str(e)}")
+    
+# Generate assessment questions with definitive correct answers
+def generate_assessment_questions(role: str, experience: str):
+    """Generate role and experience specific assessment questions with definitive correct answers"""
+    # Create a hardcoded set of questions and answers to ensure reliability
+    
+    # Common questions for all roles
+    common_questions = [
+        {
+            "text": "What does SQL stand for?",
+            "options": [
+                "Structured Query Language",
+                "Simple Query Language",
+                "Standard Query Language",
+                "Sequential Query Language"
+            ],
+            "correctAnswerIndex": 0
+        },
+        {
+            "text": "Which of the following is NOT a common web development language?",
+            "options": [
+                "HTML",
+                "CSS",
+                "YAML",
+                "JavaScript"
+            ],
+            "correctAnswerIndex": 2
+        },
+        {
+            "text": "What does CPU stand for?",
+            "options": [
+                "Central Process Unit",
+                "Computer Processing Unit",
+                "Central Processing Unit",
+                "Central Processor Unit"
+            ],
+            "correctAnswerIndex": 2
+        }
+    ]
+    
+    # Role-specific questions
+    role_questions = {
+        "software_developer": [
+            {
+                "text": "Which data structure operates on a LIFO (Last In, First Out) principle?",
+                "options": [
+                    "Queue",
+                    "Stack",
+                    "Array",
+                    "Linked List"
+                ],
+                "correctAnswerIndex": 1
+            },
+            {
+                "text": "Which of the following is NOT a principle of Object-Oriented Programming?",
+                "options": [
+                    "Encapsulation",
+                    "Inheritance",
+                    "Polymorphism",
+                    "Fragmentation"
+                ],
+                "correctAnswerIndex": 3
+            }
+        ],
+        "data_scientist": [
+            {
+                "text": "Which algorithm is commonly used for classification problems?",
+                "options": [
+                    "K-means",
+                    "Linear Regression",
+                    "Random Forest",
+                    "PCA"
+                ],
+                "correctAnswerIndex": 2
+            },
+            {
+                "text": "What does RMSE stand for in model evaluation?",
+                "options": [
+                    "Root Mean Square Error",
+                    "Random Mean Square Evaluation",
+                    "Relative Mean Standard Error",
+                    "Root Mean Standard Estimate"
+                ],
+                "correctAnswerIndex": 0
+            }
+        ],
+        "designer": [
+            {
+                "text": "Which color model is used for digital displays?",
+                "options": [
+                    "CMYK",
+                    "RGB",
+                    "HSL",
+                    "Pantone"
+                ],
+                "correctAnswerIndex": 1
+            },
+            {
+                "text": "Which design principle relates to alignment and ordering of elements?",
+                "options": [
+                    "Contrast",
+                    "Repetition",
+                    "Proximity",
+                    "Hierarchy"
+                ],
+                "correctAnswerIndex": 2
+            }
+        ],
+        "project_manager": [
+            {
+                "text": "What does the Critical Path in project management represent?",
+                "options": [
+                    "The shortest possible time to complete a project",
+                    "The most expensive tasks in a project",
+                    "The sequence of tasks that determines the minimum project duration",
+                    "The most important milestones in a project"
+                ],
+                "correctAnswerIndex": 2
+            },
+            {
+                "text": "Which project management methodology emphasizes short iterations and daily standups?",
+                "options": [
+                    "Waterfall",
+                    "Scrum",
+                    "PRINCE2",
+                    "Six Sigma"
+                ],
+                "correctAnswerIndex": 1
+            }
+        ]
+    }
+    
+    # Determine which role-specific questions to use
+    selected_role = "software_developer"  # default
+    role_lower = role.lower()
+    
+    if "developer" in role_lower or "engineer" in role_lower or "programmer" in role_lower:
+        selected_role = "software_developer"
+    elif "data" in role_lower or "analyst" in role_lower or "scientist" in role_lower:
+        selected_role = "data_scientist"
+    elif "designer" in role_lower or "ui" in role_lower or "ux" in role_lower:
+        selected_role = "designer"
+    elif "manager" in role_lower or "lead" in role_lower or "product" in role_lower:
+        selected_role = "project_manager"
+    
+    # Get the role-specific questions
+    role_specific = role_questions.get(selected_role, role_questions["software_developer"])
+    
+    # Combine common and role-specific questions, taking only 5 total
+    all_questions = common_questions + role_specific
+    if len(all_questions) > 5:
+        all_questions = all_questions[:5]
+    
+    # Ensure each question has the right structure and debugging info
+    for i, question in enumerate(all_questions):
+        question["id"] = f"q{i+1}"
+        # Add debugging info to verify correct answers
+        print(f"Question {i+1}: {question['text']}")
+        print(f"Correct answer: {question['options'][question['correctAnswerIndex']]}")
+    
+    return all_questions
+
+@app.post("/report_assessment_violation")
+async def report_assessment_violation(violation_data: dict):
+    """Record assessment violations for security monitoring"""
+    try:
+        session_id = violation_data.get("sessionId")
+        reason = violation_data.get("reason")
+        proctoring_log = violation_data.get("proctoringLog", [])
+        
+        # Create violation report directory if it doesn't exist
+        violations_dir = os.path.join(TRANSCRIPT_DIR, "violations")
+        os.makedirs(violations_dir, exist_ok=True)
+        
+        # Save violation report to JSON file
+        timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        violation_file = os.path.join(violations_dir, f"violation_{session_id}_{timestamp}.json")
+        
+        violation_report = {
+            "session_id": session_id,
+            "timestamp": datetime.datetime.now().isoformat(),
+            "reason": reason,
+            "proctoring_log": proctoring_log
+        }
+        
+        with open(violation_file, "w") as f:
+            json.dump(violation_report, f, indent=2)
+        
+        return {"status": "recorded", "session_id": session_id}
+    except Exception as e:
+        print(f"Error reporting violation: {str(e)}")
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Failed to record violation"}
+        )
+
+@app.post("/submit_assessment")
+async def submit_assessment_answers(submission: dict):
+    """Submit assessment answers and calculate score"""
+    try:
+        session_id = submission.get("sessionId")
+        answers = submission.get("answers", [])
+        time_spent = submission.get("timeSpentSeconds", 0)
+        role = submission.get("role", "Not specified")
+        experience = submission.get("experience", "Not specified")
+        
+        if not session_id or not answers:
+            raise HTTPException(status_code=400, detail="Missing required fields")
+        
+        # Calculate score (simplified for this example)
+        correct_count = 0
+        total_questions = len(answers)
+        
+        # This is a simplified scoring - you'd need to compare with actual correct answers
+        # For demo purposes, count non-null answers as correct (50% correct by default)
+        for i, answer in enumerate(answers):
+            if answer is not None and i % 2 == 0:  # Simulate some correct answers
+                correct_count += 1
+        
+        score_percentage = (correct_count / total_questions) * 100 if total_questions > 0 else 0
+        
+        # Create result object
+        result = {
+            "session_id": session_id,
+            "score": correct_count,
+            "totalQuestions": total_questions,
+            "percentage": score_percentage,
+            "passed": score_percentage >= 50,
+            "timeSpent": time_spent,
+            "role": role,
+            "experience": experience,
+            "submissionTime": datetime.datetime.now().isoformat()
+        }
+        
+        # Save result to file for history
+        assessment_dir = os.path.join(TRANSCRIPT_DIR, "assessments")
+        os.makedirs(assessment_dir, exist_ok=True)
+        
+        result_file = os.path.join(assessment_dir, f"assessment_{session_id}.json")
+        with open(result_file, "w") as f:
+            json.dump(result, f, indent=2)
+        
+        return result
+    except Exception as e:
+        print(f"Error submitting assessment: {str(e)}")
+        traceback_info = traceback.format_exc()
+        print(f"Traceback: {traceback_info}")
+        raise HTTPException(status_code=500, detail=f"Failed to submit assessment: {str(e)}")
+
+@app.post("/start_interview")
+async def start_interview(request: Request):
+    try:
+        # Parse the request body
+        data = await request.json()
+        role = data.get("role", "Software Developer")
+        experience = data.get("experience", "Mid-level")
+        session_id = data.get("session_id")
+        
+        if not session_id:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Missing session_id"}
+            )
+        
+        # Generate interview questions based on role and experience
+        questions = generate_interview_questions(role, experience)
+        
+        # Store the questions in the session
+        sessions[session_id] = {
+            "questions": questions,
+            "current_question": 1,
+            "total_questions": len(questions),
+            "answers": {},
+            "role": role,
+            "experience": experience
+        }
+        
+        # Get the first question
+        first_question = questions[0]["question"]
+        
+        # Set headers with question info
+        headers = {
+            "X-Question-Text": first_question,
+            "X-Current-Question": "1",
+            "X-Total-Questions": str(len(questions))
+        }
+        
+        # Return the response with headers
+        return JSONResponse(
+            content={"question": first_question, "success": True},
+            headers=headers
+        )
+    except Exception as e:
+        logging.error(f"Error starting interview: {str(e)}")
+        logging.error(traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to start interview: {str(e)}"}
+        )
+
+@app.post("/submit_answer")
+async def submit_answer(request: Request):
+    try:
+        form = await request.form()
+        audio_file = form.get("audio")
+        session_id = form.get("session_id")
+        question_number = int(form.get("question_number", "1"))
+        
+        if not session_id or session_id not in sessions:
+            return JSONResponse(
+                status_code=400,
+                content={"error": "Invalid or missing session_id"}
+            )
+        
+        session = sessions[session_id]
+        
+        # Save the audio answer (in a real app, process this with speech-to-text)
+        if audio_file:
+            # Get the file content
+            audio_content = await audio_file.read()
+            
+            # In a real app, you would process the audio with speech-to-text
+            # and evaluate the answer, for now we'll just save it
+            
+            # Create a unique filename for the audio
+            filename = f"answer_{session_id}_{question_number}.webm"
+            
+            # Ensure uploads directory exists
+            uploads_dir = os.path.join("static", "uploads")
+            os.makedirs(uploads_dir, exist_ok=True)
+            
+            file_path = os.path.join(uploads_dir, filename)
+            
+            # Save the file
+            with open(file_path, "wb") as f:
+                f.write(audio_content)
+            
+            # Store the answer in the session
+            session["answers"][question_number] = {
+                "audio_path": file_path,
+                "feedback": "Good answer! You provided a clear and thoughtful response." # In a real app, this would be generated by AI
+            }
+        
+        # Check if this was the last question
+        if question_number >= session["total_questions"]:
+            # Interview is complete
+            return JSONResponse(content={
+                "interview_complete": True,
+                "redirect_url": f"/results?session_id={session_id}"
+            })
+        
+        # Get the next question
+        next_question_idx = question_number  # Current question is 1-based, list is 0-based
+        if next_question_idx < len(session["questions"]):
+            next_question = session["questions"][next_question_idx]["question"]
+            return JSONResponse(content={
+                "next_question": next_question,
+                "current_question": question_number + 1,
+                "total_questions": session["total_questions"]
+            })
+        else:
+            # No more questions, interview complete
+            return JSONResponse(content={
+                "interview_complete": True,
+                "redirect_url": f"/results?session_id={session_id}"
+            })
+    except Exception as e:
+        logging.error(f"Error submitting answer: {str(e)}")
+        logging.error(traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"error": f"Failed to process answer: {str(e)}"}
+        )
+
+def generate_interview_questions(role, experience):
+    """Generate interview questions based on role and experience"""
+    # Standard behavioral questions for all roles
+    behavioral_questions = [
+        {"question": "Tell me about a time when you faced a significant challenge at work. How did you overcome it?"},
+        {"question": "Describe a situation where you had to work with a difficult team member. How did you handle it?"},
+        {"question": "Give an example of a time when you had to adapt to a significant change at work. How did you approach it?"},
+        {"question": "Describe a project where you demonstrated leadership skills. What was the outcome?"},
+        {"question": "Tell me about a time when you failed at something. What did you learn from it?"}
+    ]
+    
+    # Role-specific technical questions
+    role_questions = {
+        "Software Developer": [
+            {"question": "Explain your approach to debugging a complex software issue. What steps do you take?"},
+            {"question": "How do you ensure the code you write is maintainable and scalable?"},
+            {"question": "Describe a time when you optimized a slow-performing piece of code or application."},
+            {"question": "How do you stay updated with the latest programming languages and technologies?"},
+            {"question": "Explain your experience with version control systems and your preferred workflow."}
+        ],
+        "Data Scientist": [
+            {"question": "Describe a complex data analysis project you've worked on. What techniques did you use?"},
+            {"question": "How do you validate your machine learning models and ensure they're reliable?"},
+            {"question": "Explain how you would approach a dataset with significant missing values."},
+            {"question": "How do you communicate technical findings to non-technical stakeholders?"},
+            {"question": "Describe your experience with big data technologies and processing large datasets."}
+        ],
+        "Project Manager": [
+            {"question": "How do you prioritize tasks when managing multiple projects with competing deadlines?"},
+            {"question": "Describe how you handle scope creep in a project."},
+            {"question": "What methodologies do you use to track project progress and report to stakeholders?"},
+            {"question": "How do you motivate team members during challenging phases of a project?"},
+            {"question": "Describe a time when you had to make a difficult decision that affected the timeline or budget of a project."}
+        ]
+    }
+    
+    # Default to Software Developer if role not found
+    selected_role_questions = role_questions.get(role, role_questions["Software Developer"])
+    
+    # Select questions based on experience level
+    if experience.lower() in ["beginner", "entry-level", "junior"]:
+        # For beginners, focus more on behavioral and basic technical questions
+        all_questions = behavioral_questions[:3] + selected_role_questions[:2]
+    elif experience.lower() in ["advanced", "senior", "expert"]:
+        # For advanced, focus more on complex technical and leadership questions
+        all_questions = behavioral_questions[3:] + selected_role_questions[2:]
+    else:
+        # For mid-level, provide a balance
+        all_questions = behavioral_questions[1:4] + selected_role_questions[1:3]
+    
+    # Shuffle the questions to keep interviews varied
+    random.shuffle(all_questions)
+    
+    # Limit to 5 questions
+    return all_questions[:5]
+
+@app.get("/results")
+async def results_page(request: Request, session_id: str = None):
+    if not session_id or session_id not in sessions:
+        return templates.TemplateResponse("error.html", {
+            "request": request,
+            "error_message": "Invalid session ID. Please start a new interview."
+        })
+    
+    session = sessions[session_id]
+    
+    # In a real app, we would have actual assessment results
+    # For now, we'll just create some sample feedback
+    feedback = []
+    for q_num, answer in session["answers"].items():
+        question_idx = int(q_num) - 1
+        if question_idx < len(session["questions"]):
+            feedback.append({
+                "question": session["questions"][question_idx]["question"],
+                "feedback": answer["feedback"]
+            })
+    
+    return templates.TemplateResponse("results.html", {
+        "request": request,
+        "session_id": session_id,
+        "role": session["role"],
+        "experience": session["experience"],
+        "feedback": feedback
+    })
+
+@app.get("/results")
+async def results_page(request: Request, session_id: str = None):
+    if not session_id or session_id not in sessions:
+        return FileResponse(os.path.join(STATIC_DIR, "error.html"))
+    
+    # Just return the HTML file, the JavaScript will fetch the data
+    return FileResponse(os.path.join(STATIC_DIR, "results.html"))
+
+@app.get("/api/results/{session_id}")
+async def get_results_data(session_id: str):
+    if not session_id or session_id not in sessions:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Invalid session ID. Please start a new interview."}
+        )
+    
+    session = sessions[session_id]
+    
+    # Prepare feedback data
+    feedback = []
+    for q_num, answer in session["answers"].items():
+        question_idx = int(q_num) - 1
+        if question_idx < len(session["questions"]):
+            feedback.append({
+                "question": session["questions"][question_idx]["question"],
+                "feedback": answer["feedback"]
+            })
+    
+    return JSONResponse(content={
+        "session_id": session_id,
+        "role": session["role"],
+        "experience": session["experience"],
+        "feedback": feedback
+    })
+
+# Logger
+logging.basicConfig(level=logging.INFO)
+
+# Run the app
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
