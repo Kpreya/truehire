@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - TrueHire</title>
+    <style>
+        :root {
+            --primary-coral: #ff6b6b;
+            --dark-gray: #333333;
+            --light-gray: #f9f9f9;
+            --medium-gray: #666666;
+            --white: #ffffff;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--dark-gray);
+        }
+        
+        .banner {
+            background-color: var(--primary-coral);
+            color: white;
+            text-align: center;
+            padding: 10px 0;
+            font-size: 14px;
+        }
+        
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 10%;
+            background-color: var(--white);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .logo {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .logo h1 {
+            margin: 0;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        
+        .logo p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--medium-gray);
+        }
+        
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+        
+        nav a {
+            text-decoration: none;
+            color: var(--dark-gray);
+            font-weight: 500;
+        }
+        
+        nav a.active {
+            color: var(--dark-gray);
+            font-weight: 700;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .btn-outline {
+            border: 2px solid var(--primary-coral);
+            color: var(--primary-coral);
+            background: transparent;
+        }
+        
+        .btn-filled {
+            background-color: var(--primary-coral);
+            color: white;
+            border: none;
+        }
+        
+        .main-content {
+            padding: 50px 10%;
+        }
+        
+        .section-title {
+            font-size: 42px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .section-title:after {
+            content: "";
+            position: absolute;
+            bottom: -10px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background-color: var(--primary-coral);
+        }
+        
+        .about-content {
+            display: flex;
+            gap: 50px;
+            margin-top: 50px;
+        }
+        
+        .about-text {
+            flex: 1;
+        }
+        
+        .about-text p {
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .mission-vision {
+            margin-top: 50px;
+            display: flex;
+            gap: 30px;
+        }
+        
+        .mission, .vision {
+            flex: 1;
+            background-color: var(--light-gray);
+            padding: 30px;
+            border-radius: 8px;
+        }
+        
+        .mission h3, .vision h3 {
+            color: var(--primary-coral);
+            margin-top: 0;
+        }
+        
+        .team-section {
+            margin-top: 80px;
+        }
+        
+        .team-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .team-member {
+            text-align: center;
+            background-color: var(--light-gray);
+            padding: 30px;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+        
+        .team-member:hover {
+            transform: translateY(-10px);
+        }
+        
+        .member-avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background-color: var(--primary-coral);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+        }
+        
+        .member-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .member-role {
+            color: var(--primary-coral);
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        .hackathon-banner {
+            margin-top: 80px;
+            background-color: var(--primary-coral);
+            color: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        footer {
+            background-color: var(--dark-gray);
+            color: white;
+            padding: 30px 10%;
+            text-align: center;
+            margin-top: 80px;
+        }
+    </style>
+</head>
+<body>
+    <div class="banner">
+        
+    </div>
+    
+    <header>
+        <div class="logo">
+            <h1><img src = "logo.png" > </h1>
+            <p>REAL WORK.REAL MATCH.</p>
+        </div>
+        
+        <nav>
+            <ul>
+                <li><a href="">Home</a></li>
+                
+                <li><a href="#">How It Works</a></li>
+                
+            </ul>
+        </nav>
+        
+        <div class="buttons">
+            
+        </div>
+    </header>
+    
+    <main class="main-content">
+        <h1 class="section-title">About TrueHire</h1>
+        
+        <div class="about-content">
+            <div class="about-text">
+                <p>TrueHire was born out of a simple yet powerful idea: hiring should be about skills, not biases. Our platform is the culmination of this vision, created by a passionate team of innovators during the xto10x hackathon.</p>
+                
+                <p>We believe the traditional hiring process is broken. Resumes don't adequately showcase real skills, filters create unnecessary bias, and job posts often lack clarity. TrueHire fixes these problems with a revolutionary approach to matching talent with opportunity.</p>
+                
+                <p>Our AI-powered platform listens, learns, and finds the perfect job-fit, matching candidates to roles with skill-first precision. No more wading through endless resumes or worrying about unconscious bias – just real opportunities based on real skills.</p>
+            </div>
+        </div>
+        
+        <div class="mission-vision">
+            <div class="mission">
+                <h3>Our Mission</h3>
+                <p>To democratize the hiring process by eliminating bias and focusing on what truly matters: skills, potential, and fit. We're creating a world where opportunity is accessible to everyone with the right abilities, regardless of background.</p>
+            </div>
+            
+            <div class="vision">
+                <h3>Our Vision</h3>
+                <p>A future where hiring is reinvented – transparent, fair, and effective. Where companies find the perfect talent, and talent finds the perfect role through blind, bias-free matching and skill-based challenges rather than traditional resumes.</p>
+            </div>
+        </div>
+        
+        <div class="team-section">
+            <h2 class="section-title">Meet Team Techie Pookie</h2>
+            <p>The brilliant minds behind TrueHire who came together for the xto10x hackathon:</p>
+            
+            <div class="team-grid">
+                <div class="team-member">
+                    <div class="member-avatar">NK</div>
+                    <div class="member-name">Nikhil Kumar</div>
+                    <div class="member-role">Team Leader</div>
+                    <p>Visionary leader guiding our team through challenges with strategic thinking and innovation.</p>
+                </div>
+                
+                <div class="team-member">
+                    <div class="member-avatar">K</div>
+                    <div class="member-name">Krishopreya</div>
+                    <div class="member-role">UI/UX & Frontend Developer</div>
+                    <p>Creative force behind our user experience, crafting intuitive and beautiful interfaces.</p>
+                </div>
+                
+                
+            </div>
+        </div>
+        
+        <div class="hackathon-banner">
+            <h2>Created for the xto10x Hackathon</h2>
+            <p>TrueHire is proudly developed as part of the xto10x hackathon, where innovation meets impact. Our team came together to reimagine the hiring process and create something truly transformative.</p>
+        </div>
+    </main>
+    
+    <footer>
+        <p>&copy; 2025 TrueHire | Team TechiePookie 🎀🎀</p>
+    </footer>
+</body>
+</html>
