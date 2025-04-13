@@ -5,6 +5,14 @@ Product Video: https://youtu.be/tY3G7pz1GZk
 # TrueHire
 ![image](https://github.com/user-attachments/assets/8862b788-f877-4769-ac71-b21d6be75db8)
 
+
+
+https://github.com/user-attachments/assets/c96f23e1-d434-4277-96e8-2ffb7deb0bbc
+
+
+
+
+
 ## Overview
 
 TrueHire is a comprehensive web application designed to streamline the hiring process by providing role-based assessments, AI-driven interviews, and proctoring features. It leverages FastAPI for backend services and serves static files for the frontend interface.
