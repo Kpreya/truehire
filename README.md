@@ -1,6 +1,7 @@
 ## LINKS:
 Deployed Link:https://truehire.onrender.com/
 Video Link:https://youtu.be/2ql5D2ChnHo
+Product Video: https://youtu.be/tY3G7pz1GZk
 
 
 TrueHire revolutionizes the traditional hiring process by focusing on demonstrated skills and abilities rather than resumes. Our platform uses AI-driven assessments, blind matching, and real-world challenges to create a fair and efficient hiring ecosystem.
