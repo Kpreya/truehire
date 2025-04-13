@@ -1,6 +1,6 @@
 // Combined Permissions and Assessment Page JavaScript
 
-Get session ID from localStorage
+// Get session ID from localStorage
 const sessionId = localStorage.getItem('sessionId');
 if (!sessionId) {
     window.location.href = '/role-selection';
@@ -161,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
         // Add event listener for tracking media track ended events
         window.addEventListener('mediaTrackEnded', handleMediaTrackEnded);
     }
-    
     
     // Permissions functions
     async function toggleCamera() {
@@ -335,15 +334,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             try {
                 // Request screen sharing
-                screenStream = await navigator.mediaDevices.getDisplayMedia({
-                    video: {
-                        displaySurface: "monitor",
-                        logicalSurface: true,
-                        // Encourage full screen selection
-                        surfaceSwitching: "include",
-                        selfBrowserSurface: "exclude"
-                    }
-                });
+                screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
                 document.getElementById('toggleScreenShareButton').textContent = 'Turn Off Screen Sharing';
                 screenStatusText.textContent = 'Active';
                 screenStatus.classList.remove('inactive');
@@ -358,9 +349,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         screenStatus.classList.add('inactive');
                         screenStatus.classList.remove('active');
                         document.getElementById('toggleScreenShareButton').textContent = 'Turn On Screen Sharing';
-                        const videoTrack = screenStream.getVideoTracks()[0];
-                        const settings = videoTrack.getSettings();
-                        console.log('Screen sharing ended:', settings);
+                        
                         if (currentStage === STAGE.ASSESSMENT && !sessionTerminated) {
                             // Screen share was stopped during assessment
                             const event = new CustomEvent('mediaTrackEnded', { 
