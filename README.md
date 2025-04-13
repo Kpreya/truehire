@@ -3,6 +3,7 @@ Deployed Link:https://truehire.onrender.com/
 Video Link:https://youtu.be/2ql5D2ChnHo
 Product Video: https://youtu.be/tY3G7pz1GZk
 # TrueHire
+![image](https://github.com/user-attachments/assets/8862b788-f877-4769-ac71-b21d6be75db8)
 
 ## Overview
 
