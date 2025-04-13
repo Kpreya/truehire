@@ -2,40 +2,113 @@
 Deployed Link:https://truehire.onrender.com/
 Video Link:https://youtu.be/2ql5D2ChnHo
 Product Video: https://youtu.be/tY3G7pz1GZk
+# TrueHire
+
+## Overview
+
+TrueHire is a comprehensive web application designed to streamline the hiring process by providing role-based assessments, AI-driven interviews, and proctoring features. It leverages FastAPI for backend services and serves static files for the frontend interface.
+
+## Problem Statement
+
+The hiring process can be cumbersome and inefficient, often requiring multiple tools and manual coordination. TrueHire aims to simplify this by providing a unified platform for role selection, permissions management, assessments, AI-driven interviews, and proctoring.
+
+## Features
+
+- **Role Selection**: Users can select their desired role and experience level.
+- **Permissions Management**: Manage permissions for camera, microphone, and screen sharing.
+- **Role-Based Assessments**: Generate and submit assessments tailored to the selected role.
+- **AI-Driven Interviews**: Conduct interviews with role-specific questions and audio response recording.
+- **Proctoring**: Ensure the integrity of the interview process with audio recording and session management.
+- **Results**: View assessment and interview results.
+
+## Directory Structure
+truehire/
+│
+├── main.py # Main application file
+├── static/ # Directory for static files
+│ ├── index.html # Main page
+│ ├── role_selection.html# Role selection page
+│ ├── permissions.html # Permissions page
+│ ├── assessment-combined.html # Assessment page
+│ ├── interview.html # Interview page
+│ └── uploads/ # Directory for storing uploaded audio files
+├── transcripts/ # Directory for storing interview transcripts
+├── temp_audio/ # Temporary storage for audio files
+└── .gitignore # Git ignore file
+
+## Libraries and Documentation
+
+- **FastAPI**: A modern, fast (high-performance) web framework for building APIs with Python 3.7+ based on standard Python type hints.
+  - Documentation: [FastAPI Docs](https://fastapi.tiangolo.com/)
+- **Pydantic**: Data validation and settings management using Python type annotations.
+  - Documentation: [Pydantic Docs](https://pydantic-docs.helpmanual.io/)
+- **aiofiles**: File support for asyncio.
+  - Documentation: [aiofiles GitHub](https://github.com/Tinche/aiofiles)
+- **CORS Middleware**: Middleware for handling Cross-Origin Resource Sharing (CORS).
+  - Documentation: [CORS Middleware Docs](https://fastapi.tiangolo.com/tutorial/cors/)
+
+## API Endpoints
+
+- **GET /**: Serve the main page.
+- **GET /role-selection**: Serve the role selection page.
+- **GET /permissions**: Serve the permissions page.
+- **GET /assessment**: Serve the assessment page.
+- **GET /interview**: Serve the interview page.
+- **POST /api/select-role**: Select a role and create a session.
+- **POST /api/permissions**: Update permissions for a session.
+- **GET /api/assessment/questions/{session_id}**: Get assessment questions based on role.
+- **POST /api/assessment/submit**: Submit assessment answers.
+- **POST /start_interview**: Start the interview process.
+- **POST /submit_answer**: Submit interview answers with audio recording.
+- **GET /results**: View results page.
+- **GET /api/results/{session_id}**: Get results data for a session.
+
+## Configuration
+
+### API Keys
+
+To use the Whisper API and Deepeek R1 Model, you need to set up API keys. Follow these steps:
+
+1. **Whisper API Key**: Obtain your API key from [Whisper API](https://openai.com/research/whisper) and set it in your environment variables:
+   ```bash
+   export WHISPER_API_KEY='your_whisper_api_key'
+   ```
+
+2. **Deepeek R1 Model Key**: Obtain your API key from [Deepeek AI](https://deepeek.ai/models/r1) and set it in your environment variables:
+   ```bash
+   export DEEPEEK_R1_API_KEY='your_deepeek_r1_api_key'
+   ```
+
+## Getting Started
+
+### Prerequisites
+
+- Python 3.7+
+- FastAPI
+- aiofiles
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd truehire
+   ```
+
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. Run the application:
+   ```bash
+   uvicorn main:app --reload
+   ```
+
+4. Access the application at `http://localhost:8000`.
 
 
-TrueHire revolutionizes the traditional hiring process by focusing on demonstrated skills and abilities rather than resumes. Our platform uses AI-driven assessments, blind matching, and real-world challenges to create a fair and efficient hiring ecosystem.
-
-## 🎯 Problem Statement
-The traditional hiring process is broken:
-- Talented candidates get filtered out by keyword matching
-- Bias affects candidate evaluation
-- Generic job descriptions don't reflect actual work
-- Resume-based hiring favors conventional backgrounds
-
-## 💡 Solution
-TrueHire provides:
-- Skill-based challenges instead of resumes
-- AI-powered candidate-job matching
-- Real work samples from companies
-- Blind initial screening process
-- Transparent company data
-- Continuous feedback loop
-
-## 🏗️ Architecture & Tech Stack
-
-### Backend
-- **Framework**: FastAPI
-- **Database**: SuperBase
-- **AI Integration**: DeepSeek and Elevene Labs API key
-- **Authentication**: JWT-based auth
-
-### Frontend
-- **Tech**: HTML5, CSS3, Vanilla JavaScript
-- **UI Framework**: Custom responsive design
-- **Real-time Features**: WebSocket for live interviews
-
-## 🚀 Features & Implementation
+##  Features & Implementation
 
 ### Phase 1: Authentication & Interest Collection
 - Email/password and Linkedin authentication
@@ -81,91 +154,7 @@ TrueHire provides:
 - Offer management
 - HR communication portal
 
-## 🔧 Setup & Installation
 
-1. **Clone Repository**
-```bash
-git clone https://github.com/techiepookie/truehire.git
-cd truehire
-```
-
-2. **Set up Virtual Environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-.\venv\Scripts\activate   # Windows
-```
-
-3. **Install Dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-4. **Environment Configuration**
-```bash
-cp .env.example .env
-# Edit .env with your configurations
-```
-
-
-. **Run Application**
-```bash
-uvicorn main:app --reload
-```
-
-## 📁 Project Structure
-```
-truehire/
-├── backend/
-│   ├── api/
-│   ├── models/
-│   ├── services/
-│   └── utils/
-├── frontend/
-│   ├── static/
-│   ├── templates/
-│   └── public/
-├── tests/
-├── docs/
-└── scripts/
-```
-
-## 🔐 Security Features
-- HTTPS enforcement
-- JWT authentication
-- Input validation
-- XSS protection
-- CSRF protection
-- Rate limiting
-
-## 🎥 Proctoring Features
-- Full-screen monitoring
-- Tab switch detection
-- Camera verification
-- Audio monitoring
-- Activity logging
-
-## 📊 Analytics & Reporting
-- Interview performance metrics
-- Hiring success rates
-- Company feedback analysis
-- Candidate progress tracking
-- System effectiveness metrics
-
-## 🤝 Contributing
-1. Fork the repository
-2. Create feature branch
-3. Commit changes
-4. Push to branch
-5. Open pull request
-
-## 🧪 Testing
-```bash
-pytest tests/
-```
-
-## 📜 License
-This project is licensed under the MIT License - see LICENSE file for details.
 
 ## 🔄 Future Roadmap
 - [ ] Mobile application
@@ -185,6 +174,13 @@ nikhilkumar1241@outlook.com
 krish6.ch@gmail.com
 kshitizravijangra@gmail.com
 
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 --
 
