@@ -6,13 +6,7 @@ Product Video: https://youtu.be/tY3G7pz1GZk
 ![image](https://github.com/user-attachments/assets/8862b788-f877-4769-ac71-b21d6be75db8)
 
 
-
-
-
-https://github.com/user-attachments/assets/1f3556d8-00d4-4ed4-92df-d1a7dc2af937
-
-
-
+https://github.com/user-attachments/assets/5f5c446a-8e83-4c94-afe9-16ef62e612be
 
 
 ## Overview
