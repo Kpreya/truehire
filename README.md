@@ -24,17 +24,17 @@ The hiring process can be cumbersome and inefficient, often requiring multiple t
 ## Directory Structure
 truehire/
 │
-├── main.py # Main application file
-├── static/ # Directory for static files
-│ ├── index.html # Main page
-│ ├── role_selection.html# Role selection page
-│ ├── permissions.html # Permissions page
-│ ├── assessment-combined.html # Assessment page
-│ ├── interview.html # Interview page
-│ └── uploads/ # Directory for storing uploaded audio files
-├── transcripts/ # Directory for storing interview transcripts
-├── temp_audio/ # Temporary storage for audio files
-└── .gitignore # Git ignore file
+├── main.py Main application file
+├── static/  Directory for static files
+│ ├── index.html  Main page
+│ ├── role_selection.html Role selection page
+│ ├── permissions.html  Permissions page
+│ ├── assessment-combined.html  Assessment page
+│ ├── interview.html  Interview page
+│ └── uploads/  Directory for storing uploaded audio files
+├── transcripts/  Directory for storing interview transcripts
+├── temp_audio/  Temporary storage for audio files
+└── .gitignore  Git ignore file
 
 ## Libraries and Documentation
 
@@ -156,18 +156,18 @@ To use the Whisper API and Deepeek R1 Model, you need to set up API keys. Follow
 
 
 
-## 🔄 Future Roadmap
+## Future Roadmap
 - [ ] Mobile application
 - [ ] Advanced AI models
 - [ ] Blockchain verification
 - [ ] Video interview features
 - [ ] International market support
 
-## 👥 Team
+##  Team
 - Project Lead: Nikhil Kumar Obhawani
 - Team: Kshitiz Jangra,Krishnopreya Chakraborty
 
-## 📞 Support
+##  Support
 For support, email support: 
 nikhilkumar1241@outlook.com 
 
