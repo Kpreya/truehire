@@ -23,19 +23,21 @@ The hiring process can be cumbersome and inefficient, often requiring multiple t
 - **Results**: View assessment and interview results.
 
 ## Directory Structure
+```
 truehire/
 │
-├── main.py Main application file
-├── static/  Directory for static files
-│ ├── index.html  Main page
-│ ├── role_selection.html Role selection page
-│ ├── permissions.html  Permissions page
-│ ├── assessment-combined.html  Assessment page
-│ ├── interview.html  Interview page
-│ └── uploads/  Directory for storing uploaded audio files
-├── transcripts/  Directory for storing interview transcripts
-├── temp_audio/  Temporary storage for audio files
-└── .gitignore  Git ignore file
+├── main.py                # Main application file
+├── static/                # Directory for static files
+│   ├── index.html         # Main page
+│   ├── role_selection.html# Role selection page
+│   ├── permissions.html   # Permissions page
+│   ├── assessment-combined.html # Assessment page
+│   ├── interview.html     # Interview page
+│   └── uploads/           # Directory for storing uploaded audio files
+├── transcripts/           # Directory for storing interview transcripts
+├── temp_audio/            # Temporary storage for audio files
+└── .gitignore             # Git ignore file
+```
 
 ## Libraries and Documentation
 
