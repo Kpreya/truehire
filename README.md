@@ -72,7 +72,7 @@ truehire/
 
 To use the Whisper API and Deepeek R1 Model, you need to set up API keys. Follow these steps:
 
-1. **Whisper API Key**: Obtain your API key from [Whisper API](https://openai.com/research/whisper) and set it in your environment variables:
+1. **Whisper API Key**: Obtain your API key from [Whisper API](https://www.lemonfox.ai/apis) and set it in your environment variables:
    ```bash
    export WHISPER_API_KEY='your_whisper_api_key'
    ```
@@ -94,7 +94,7 @@ To use the Whisper API and Deepeek R1 Model, you need to set up API keys. Follow
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone (https://github.com/techiepookie/truehire)
    cd truehire
    ```
 
