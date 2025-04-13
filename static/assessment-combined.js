@@ -1,10 +1,10 @@
 // Combined Permissions and Assessment Page JavaScript
 
-// Get session ID from localStorage
-//const sessionId = localStorage.getItem('sessionId');
-//if (!sessionId) {
-    //window.location.href = '/role-selection';
-//}
+Get session ID from localStorage
+const sessionId = localStorage.getItem('sessionId');
+if (!sessionId) {
+    window.location.href = '/role-selection';
+}
 
 // Stages
 const STAGE = {
